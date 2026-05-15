@@ -1,31 +1,19 @@
-import math
-
-# import pygame
+import pygame
 
 # from assets.entity import Entity
 # from assets.enemy import Enemy
 # from assets.player import Player
 
 
-def straight_line(x, height):
-    line_path = []
-    for i in range(0, height):
-        y = i
+def check_collisions(player, enemies, bullets):
 
-        line_path.append((x, y))
-    return line_path
+    # if any enemy has collieded with the player
+    enemy_to_player = pygame.sprite.spritecollideany(player, enemies)
+    if enemy_to_player is not None:
+        player.kill()
+        enemy_to_player.kill()
 
-    # def sine():
-    #     pass
-
-    # def cosine(start, end, wave_length, amplitude):
-
-    #     return 0
-
-    # def cosh(start, end, wave_length, amplitude):
-
-    #     return 0
-
-    # def sinh(start, end, wave_length, amplitude):
-
-    #     return 0
+    for bullet in bullets.sprites():
+        bullet_to_enemy = pygame.sprite.spritecollideany(bullet, enemies)
+        if bullet_to_enemy:
+            bullet_to_enemy.kill()

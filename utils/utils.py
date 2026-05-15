@@ -17,4 +17,4 @@ def load_png(img_path, width, height, angle_x=0):
     except FileNotFoundError:
         print(f"Cannot load image: {img_path}")
         raise SystemExit
-    return image, image.get_rect()
+    return image

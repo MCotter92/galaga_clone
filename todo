@@ -1,7 +1,6 @@
-# deenski
-
-# mcotter92
-
-- [ ] Enemy collisions and health bar
-- [ ] Player collisions and health bar
+- [ ] Enemy collisions with bullets
+  - enemies show up in a line of 4 from left to right. if I kill an enemy, that enemy will die (sometimes) and the others to its right will die also
+- [ ] Enemy health bar
+- [ ] Player collisions 
+- [ ] Player health bar
 - [ ] Enemy paths

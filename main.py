@@ -1,13 +1,15 @@
 import pygame
+import logging
 
 from assets.bullet import Bullet
-from assets.colors import BLACK, GREEN
+from assets.colors import GREEN
 from assets.enemy import Enemy
 from assets.groups import all_sprites, bullets, enemies
-from assets.helpers import straight_line
+from assets.helpers import check_collisions
 from assets.level import Level
 from assets.player import Player
-from assets.collision import Collision
+
+logger = logging.getLogger(__name__)
 
 WIDTH, HEIGHT = (1080, 700)
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -25,9 +27,8 @@ SPACESHIP = Player(
     height=SPACESHIP_HEIGHT,
     angle=180,
     hp=100,
-    coords=((WIDTH / 2) - 27.3, 600),
 )
-
+SPACESHIP.rect.move_ip(WIDTH // 2, 500)
 all_sprites.add(SPACESHIP)
 
 # ENEMY_HIT = pygame.USEREVENT
@@ -48,12 +49,12 @@ def create_enemies(num, width, height):
             height,
             angle=0,
             hp=50,
-            coords=(x, y),
         )
-        line_path = straight_line(enemy.coords[0], HEIGHT)
-        enemy.sprite_path = line_path
+        # line_path = straight_line(enemy.coords[0], HEIGHT)
+        # enemy.sprite_path = line_path
         enemies.add(enemy)
         all_sprites.add(enemy)
+
         i += 1
         x += 100
         # print(enemy.sprite_path)
@@ -72,45 +73,7 @@ def level_generator(name, image, resolution, num_enemies) -> Level:
     )
 
 
-def draw_window(level: Level, enemies, bullets):
-    WINDOW.blit(level.img, (0, 0))
-    WINDOW.blit(level.player.img, (level.player.x_coord, level.player.y_coord))
-
-    for enemy in enemies:
-        WINDOW.blit(enemy.img, (enemy.x_coord, enemy.y_coord))
-
-    for bullet in bullets:
-        WINDOW.blit(bullet.surf, (bullet.rect.left, bullet.rect.top))
-    pygame.display.flip()
-
-
-def spaceship_movement(keys_pressed):
-    # move left
-    if keys_pressed[pygame.K_a] and SPACESHIP.x_coord - VELO > 0:
-        SPACESHIP.x_coord = SPACESHIP.x_coord - VELO
-
-    # move right
-    if keys_pressed[pygame.K_d] and SPACESHIP.x_coord + VELO + SPACESHIP.width < WIDTH:
-        SPACESHIP.x_coord = SPACESHIP.x_coord + VELO
-
-    # move up
-    if keys_pressed[pygame.K_w] and SPACESHIP.y_coord - VELO > 0:
-        if SPACESHIP.y_coord <= 500:
-            SPACESHIP.y_coord = 500
-        else:
-            SPACESHIP.y_coord = SPACESHIP.y_coord - VELO
-
-    # move down
-    if (
-        keys_pressed[pygame.K_s]
-        and SPACESHIP.y_coord + VELO + SPACESHIP.height < HEIGHT
-    ):
-        SPACESHIP.y_coord += VELO
-
-
 def main():
-    # player = Player()
-    # enemy = Enemy()
     clock = pygame.time.Clock()
     run = True
     enemy_count = 3
@@ -121,7 +84,9 @@ def main():
         (WIDTH, HEIGHT),
         enemy_count,
     )
+
     while run:
+        logger.info("game loop started")
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -133,26 +98,36 @@ def main():
                     bullet = Bullet(
                         GREEN,
                         (
-                            level.player.x_coord + (level.player.width / 2),
-                            level.player.y_coord + (level.player.height / 2),
+                            SPACESHIP.rect.center[0],
+                            SPACESHIP.rect.center[1],
                         ),
                     )
                     bullets.add(bullet)
                     all_sprites.add(bullet)
         keys_pressed = pygame.key.get_pressed()
 
-        spaceship_movement(keys_pressed)
-
-        Collision.check_collisions(
-            level.player,
-            enemies,
+        check_collisions(
+            SPACESHIP,
+            level.enemies,
             bullets,
         )
 
-        bullets.update(WIDTH, HEIGHT)
-        enemies.update(WIDTH, HEIGHT)
-        all_sprites.update(WIDTH, HEIGHT)
-        draw_window(level, enemies, bullets)
+        bullets.update(keys_pressed, WIDTH, HEIGHT)
+        level.enemies.update(keys_pressed, WIDTH, HEIGHT)
+        SPACESHIP.update(keys_pressed, WIDTH, HEIGHT)
+        all_sprites.update(keys_pressed, WIDTH, HEIGHT)
+
+        WINDOW.blit(level.surface, (level.rect.x, level.rect.y))
+        WINDOW.blit(SPACESHIP.surface, (SPACESHIP.rect.x, SPACESHIP.rect.y))
+        for bullet in bullets.sprites():
+            WINDOW.blit(bullet.surf, (bullet.rect.x, bullet.rect.y))
+        x = 100
+        for enemy in level.enemies.sprites():
+            enemy.rect.x = x
+            WINDOW.blit(enemy.surface, (enemy.rect.x, enemy.rect.y))
+            x += 300
+
+        pygame.display.flip()
 
         if len(level.enemies) == 0:
             level_count += 1

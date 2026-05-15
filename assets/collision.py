@@ -7,8 +7,7 @@ class Collision:
         self.player = player
         self.bullets = bullets
 
-    def check_collisions(enemies, player, bullets):
-
+    def check_collisions(self, enemies, player, bullets):
         # if any enemy has collieded with the player
         enemy_to_player = pygame.sprite.spritecollideany(player, enemies)
         if enemy_to_player:
