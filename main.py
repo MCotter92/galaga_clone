@@ -1,15 +1,13 @@
 import pygame
-import logging
 
 from assets.bullet import Bullet
-from assets.colors import GREEN
+from assets.collision import Collision
+from assets.colors import BLACK, GREEN
 from assets.enemy import Enemy
 from assets.groups import all_sprites, bullets, enemies
 from assets.helpers import check_collisions
 from assets.level import Level
 from assets.player import Player
-
-logger = logging.getLogger(__name__)
 
 WIDTH, HEIGHT = (1080, 700)
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -106,9 +104,17 @@ def main():
                     all_sprites.add(bullet)
         keys_pressed = pygame.key.get_pressed()
 
+<<<<<<< HEAD
         check_collisions(
             SPACESHIP,
             level.enemies,
+=======
+        spaceship_movement(keys_pressed)
+
+        Collision.check_collisions(
+            enemies,
+            level.player,
+>>>>>>> 945869bb161ac7c477b7003caea4d5f2adf56bbe
             bullets,
         )
 
