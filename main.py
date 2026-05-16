@@ -84,7 +84,6 @@ def main():
     )
 
     while run:
-        logger.info("game loop started")
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -104,17 +103,11 @@ def main():
                     all_sprites.add(bullet)
         keys_pressed = pygame.key.get_pressed()
 
-<<<<<<< HEAD
-        check_collisions(
-            SPACESHIP,
-            level.enemies,
-=======
         spaceship_movement(keys_pressed)
 
         Collision.check_collisions(
             enemies,
             level.player,
->>>>>>> 945869bb161ac7c477b7003caea4d5f2adf56bbe
             bullets,
         )
 

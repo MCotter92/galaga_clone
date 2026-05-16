@@ -14,6 +14,6 @@ def check_collisions(player, enemies, bullets):
         enemy_to_player.kill()
 
     for bullet in bullets.sprites():
-        bullet_to_enemy = pygame.sprite.spritecollideany(bullet, enemies)
+        bullet_to_enemy = pygame.sprite.groupcollide(bullet, enemies)
         if bullet_to_enemy:
             bullet_to_enemy.kill()
