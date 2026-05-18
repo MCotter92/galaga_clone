@@ -1,4 +1,4 @@
-# Galigo
+# galaga_clone
 
 ### Setup
 
