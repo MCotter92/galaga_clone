@@ -1,12 +1,13 @@
 import pygame
 
 from assets.bullet import Bullet
-from assets.colors import BLACK, GREEN
+from assets.colors import GREEN
 from assets.enemy import Enemy
 from assets.groups import all_sprites, bullets, enemies
 from assets.helpers import straight_line
 from assets.level import Level
 from assets.player import Player
+
 
 WIDTH, HEIGHT = (1080, 700)
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -17,7 +18,7 @@ VELO = 10
 BULLETS_VELOCITY = 10
 RED = (255, 0, 0)
 
-SPACESHIP = Player(
+Player1 = Player(
     name="Player1",
     img="assets/images/spaceship_red.png",
     width=SPACESHIP_WIDTH,
@@ -27,7 +28,7 @@ SPACESHIP = Player(
     coords=((WIDTH / 2) - 27.3, 600),
 )
 
-all_sprites.add(SPACESHIP)
+all_sprites.add(Player1)
 
 # ENEMY_HIT = pygame.USEREVENT
 
@@ -55,7 +56,6 @@ def create_enemies(num, width, height):
         all_sprites.add(enemy)
         i += 1
         x += 100
-        # print(enemy.sprite_path)
     return enemies
 
 
@@ -67,7 +67,7 @@ def level_generator(name, image, resolution, num_enemies) -> Level:
         resolution[1],
         0,
         create_enemies(num_enemies, SPACESHIP_WIDTH - 5, SPACESHIP_HEIGHT - 5),
-        SPACESHIP,
+        Player1,
     )
 
 
@@ -83,37 +83,26 @@ def draw_window(level: Level, enemies, bullets):
     pygame.display.flip()
 
 
-def spaceship_movement(keys_pressed):
-    # move left
-    if keys_pressed[pygame.K_a] and SPACESHIP.x_coord - VELO > 0:
-        SPACESHIP.x_coord = SPACESHIP.x_coord - VELO
-
-    # move right
-    if keys_pressed[pygame.K_d] and SPACESHIP.x_coord + VELO + SPACESHIP.width < WIDTH:
-        SPACESHIP.x_coord = SPACESHIP.x_coord + VELO
-
-    # move up
-    if keys_pressed[pygame.K_w] and SPACESHIP.y_coord - VELO > 0:
-        if SPACESHIP.y_coord <= 500:
-            SPACESHIP.y_coord = 500
-        else:
-            SPACESHIP.y_coord = SPACESHIP.y_coord - VELO
-
-    # move down
-    if (
-        keys_pressed[pygame.K_s]
-        and SPACESHIP.y_coord + VELO + SPACESHIP.height < HEIGHT
-    ):
-        SPACESHIP.y_coord += VELO
-
-
-def handle_bullets(bullets):  # add enemy as func input here when ready
+def handle_bullets(bullets, enemies):
     for bullet in bullets:
-
-        bullet_collisions = pygame.sprite.spritecollideany(bullet, enemies)
-        if bullet_collisions:
+        hit_enemy = pygame.sprite.spritecollideany(bullet, enemies)
+        if hit_enemy:
+            hit_enemy.hp -= 25
             bullet.kill()
-            bullet_collisions.kill()
+            if hit_enemy.hp <= 0:
+                hit_enemy.kill()
+
+
+def handle_crashes(player, enemies):
+    for enemy in pygame.sprite.spritecollide(player, enemies, False):
+        enemy.hp -= 25
+        player.hp -= 25
+        print("player hp: ", player.hp)
+        print("enemy hp: ", enemy.hp)
+        if enemy.hp <= 0:
+            enemy.kill()
+        if player.hp <= 0:
+            player.register_death()
 
 
 def main():
@@ -130,7 +119,10 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
-
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    run = False
+                    pygame.quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RSHIFT:
                     bullet = Bullet(
@@ -144,11 +136,12 @@ def main():
                     all_sprites.add(bullet)
         keys_pressed = pygame.key.get_pressed()
 
-        spaceship_movement(keys_pressed)
-        handle_bullets(bullets)
+        Player1.move(keys_pressed, VELO, WIDTH, HEIGHT)
+        handle_bullets(bullets, enemies)
+        handle_crashes(Player1, enemies)
         bullets.update(WIDTH, HEIGHT)
         enemies.update(WIDTH, HEIGHT)
-        all_sprites.update(WIDTH, HEIGHT)
+        Player1.update_pos()
         draw_window(level, enemies, bullets)
         if len(level.enemies) == 0:
             level_count += 1

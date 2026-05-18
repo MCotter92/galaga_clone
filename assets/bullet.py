@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 
@@ -8,12 +6,13 @@ class Bullet(pygame.sprite.Sprite):
         super(Bullet, self).__init__()
         self.surf = pygame.surface.Surface((10, 25))
         self.surf.fill(color)
-        self.rect = self.surf.get_rect(
+        self.rect: pygame.Rect = self.surf.get_rect(
             center=(
                 coordinates[0],
                 coordinates[1],
             )
         )
+        assert self.rect is not None
         self.speed = speed
 
     def update(self, window_width, window_height):

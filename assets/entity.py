@@ -1,6 +1,3 @@
-import math
-import os
-
 import pygame
 
 from utils.utils import load_png

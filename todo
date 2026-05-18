@@ -1,7 +1,3 @@
-# deenski
-
-# mcotter92
-
-- [ ] Enemy collisions and health bar
-- [ ] Player collisions and health bar
-- [ ] Enemy paths
+- [x] Enemy collisions with bullets
+- [ ] Player collisions with enemies
+- [ ] health bar
