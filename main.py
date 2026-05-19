@@ -6,6 +6,13 @@ from assets.enemy import Enemy
 from assets.groups import all_sprites, bullets, enemies
 from assets.helpers import straight_line
 from assets.level import Level
+from assets.paths import (
+    CosinePath,
+    ReverseZigZagPath,
+    SinePath,
+    StraightPath,
+    ZigZagPath,
+)
 from assets.player import Player
 
 
@@ -51,11 +58,12 @@ def create_enemies(num, width, height):
             height,
             angle=0,
             max_health=100,
-            coords=(x, y),
             current_health=100,
+            coords=[x, y],
+            start_x=x,
+            speed=1,
+            path=ReverseZigZagPath(amplitude=80, frequency=0.1),
         )
-        line_path = straight_line(enemy.coords[0], HEIGHT)
-        enemy.sprite_path = line_path
         enemies.add(enemy)
         all_sprites.add(enemy)
         i += 1
