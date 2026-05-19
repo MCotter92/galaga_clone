@@ -18,13 +18,16 @@ VELO = 10
 BULLETS_VELOCITY = 10
 RED = (255, 0, 0)
 
+HIT_COOLDOWN = 1000  # milliseconds
+
 Player1 = Player(
     name="Player1",
     img="assets/images/spaceship_red.png",
     width=SPACESHIP_WIDTH,
     height=SPACESHIP_HEIGHT,
     angle=180,
-    hp=100,
+    max_health=100,
+    current_health=100,
     coords=((WIDTH / 2) - 27.3, 600),
 )
 
@@ -47,8 +50,9 @@ def create_enemies(num, width, height):
             width,
             height,
             angle=0,
-            hp=50,
+            max_health=100,
             coords=(x, y),
+            current_health=100,
         )
         line_path = straight_line(enemy.coords[0], HEIGHT)
         enemy.sprite_path = line_path
@@ -73,36 +77,46 @@ def level_generator(name, image, resolution, num_enemies) -> Level:
 
 def draw_window(level: Level, enemies, bullets):
     WINDOW.blit(level.img, (0, 0))
-    WINDOW.blit(level.player.img, (level.player.x_coord, level.player.y_coord))
+    level.player.draw(WINDOW)
 
     for enemy in enemies:
-        WINDOW.blit(enemy.img, (enemy.x_coord, enemy.y_coord))
+        enemy.draw(WINDOW)
 
     for bullet in bullets:
         WINDOW.blit(bullet.surf, (bullet.rect.left, bullet.rect.top))
     pygame.display.flip()
 
 
-def handle_bullets(bullets, enemies):
+def detect_bullet_enemies_collisions(bullets, enemies):
     for bullet in bullets:
         hit_enemy = pygame.sprite.spritecollideany(bullet, enemies)
         if hit_enemy:
-            hit_enemy.hp -= 25
+            hit_enemy.current_health -= 25
+            hit_enemy.healthbar.current_health = hit_enemy.current_health
             bullet.kill()
-            if hit_enemy.hp <= 0:
+            if hit_enemy.current_health <= 0:
                 hit_enemy.kill()
 
 
-def handle_crashes(player, enemies):
+def detect_player_enemies_collisions(player, enemies):
+    run = True
+    now = pygame.time.get_ticks()
+
     for enemy in pygame.sprite.spritecollide(player, enemies, False):
-        enemy.hp -= 25
-        player.hp -= 25
-        print("player hp: ", player.hp)
-        print("enemy hp: ", enemy.hp)
-        if enemy.hp <= 0:
-            enemy.kill()
-        if player.hp <= 0:
-            player.register_death()
+        if now - player.last_hit_time > HIT_COOLDOWN:
+            enemy.current_health -= 25
+            enemy.healthbar.current_health = enemy.current_health
+            if enemy.current_health <= 0:
+                enemy.kill()
+            player.current_health -= 25
+            player.healthbar.current_health = player.current_health
+            player.last_hit_time = now
+
+            if player.current_health <= 0:
+                player.register_death()
+                run = False
+                return run
+    return run
 
 
 def main():
@@ -136,9 +150,9 @@ def main():
                     all_sprites.add(bullet)
         keys_pressed = pygame.key.get_pressed()
 
-        Player1.move(keys_pressed, VELO, WIDTH, HEIGHT)
-        handle_bullets(bullets, enemies)
-        handle_crashes(Player1, enemies)
+        Player1.calculate_movement(keys_pressed, VELO, WIDTH, HEIGHT)
+        detect_bullet_enemies_collisions(bullets, enemies)
+        run = detect_player_enemies_collisions(Player1, enemies)
         bullets.update(WIDTH, HEIGHT)
         enemies.update(WIDTH, HEIGHT)
         Player1.update_pos()
