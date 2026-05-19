@@ -1,6 +1,5 @@
 import pygame
 
-from assets import healthbar
 from assets.entity import Entity
 from assets.healthbar import HealthBar
 from assets.paths import StraightPath
@@ -51,7 +50,7 @@ class Enemy(Entity):
 
         self.last_hit_time = 0
 
-    def update(self, window_width, window_height):
+    def update(self, window_height):
         self.coords[0] = self.sprite_path.path(self.x_intercept, self.coords[1])
         self.coords[1] += self.speed
         self.healthbar.rect.bottomleft = (
