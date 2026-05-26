@@ -9,12 +9,12 @@ from collisions.collisions import (
     detect_bullet_enemies_collisions,
     detect_player_enemies_collisions,
 )
-from rederers.renderers import draw_window
+from renderers.renderers import draw_window
 
 
 WINDOW_WIDTH, WINDOW_HEIGHT = (1080, 700)
 WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-PLAYER_WIDTH, PLAYER_HEIGHT = (55, 40)
+PLAYER_WIDTH, PLAYER_HEIGHT = (100, 100)
 FPS = 60
 VELO = 10
 BULLETS_VELOCITY = 10
@@ -23,7 +23,7 @@ HIT_COOLDOWN = 1000  # milliseconds
 
 Player1 = Player(
     name="Player1",
-    img="assets/images/spaceship_red.png",
+    img="assets/images/tiny-spaceships/tinyShip2.png",
     width=PLAYER_WIDTH,
     height=PLAYER_HEIGHT,
     angle=180,
@@ -41,7 +41,7 @@ def main():
     level_count = 1
     level = level_generator(
         name=f"Level {level_count}",
-        image="assets/images/space.png",
+        image="assets/images/background-black.png",
         window_width=WINDOW_WIDTH,
         window_height=WINDOW_HEIGHT,
         num_enemies=enemy_count,
@@ -76,7 +76,7 @@ def main():
         detect_bullet_enemies_collisions(bullets, enemies)
         run = detect_player_enemies_collisions(Player1, enemies, HIT_COOLDOWN)
         bullets.update(WINDOW_WIDTH, WINDOW_HEIGHT)
-        enemies.update(WINDOW_WIDTH, WINDOW_HEIGHT)
+        enemies.update(WINDOW_HEIGHT)
         Player1.update_pos()
         draw_window(level, enemies, bullets, WINDOW)
         if len(level.enemies) == 0:

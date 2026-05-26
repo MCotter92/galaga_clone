@@ -14,7 +14,7 @@ def create_enemies(num, width, height):
     while i < num:
         enemy = Enemy(
             name=f"Enemy{i}",
-            img="assets/images/spaceship_yellow.png",
+            img="assets/images/tiny-spaceships/tinyShip2.png",
             width=width,
             height=height,
             angle=0,
