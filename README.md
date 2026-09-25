@@ -1,22 +1,7 @@
 # galaga_clone
 Its a galaga clone. Not 1:1. Just for fun.
 
-## Setup
-
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# play the game
-python3 main.py
-```
-Or just use `uv`
-
-## Todo
-### OpenCode's Plan
-
+## Plan
 A big refactor to make enemies and levels behave like real Galaga:
 **endless formation waves** (no discrete levels), enemies that fly into a formation, shoot, and dive at the player, and an open-ended high-score game that ends on death/quit and records scores to a JSON file.
 

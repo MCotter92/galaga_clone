@@ -24,7 +24,7 @@ def detect_bullet_enemies_collisions(bullets, enemies):
 
 
 def detect_player_enemies_collisions(player, enemies, hit_cooldown):
-    run = True
+    player_alive = True
     now = pygame.time.get_ticks()
 
     for enemy in pygame.sprite.spritecollide(player, enemies, False):
@@ -46,6 +46,6 @@ def detect_player_enemies_collisions(player, enemies, hit_cooldown):
 
             if player.current_health <= 0:
                 player.register_death()
-                run = False
-                return run
-    return run
+                player_alive = False
+                return player_alive
+    return player_alive

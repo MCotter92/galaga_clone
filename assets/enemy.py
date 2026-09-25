@@ -21,7 +21,7 @@ class Enemy(pygame.sprite.Sprite):
         max_health,
         current_health,
         coords,
-        speed,
+        step,
         start_x,
         start_y=0,
         path=None,
@@ -57,7 +57,7 @@ class Enemy(pygame.sprite.Sprite):
         self.start_y = start_y
         self.coords[0] = self.start_x
         self.coords[1] = self.start_y
-        self.speed = speed
+        self.speed = step
         self.sprite_path = path or StraightPath()
 
         # health data

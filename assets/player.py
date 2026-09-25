@@ -68,14 +68,14 @@ class Player(pygame.sprite.Sprite):
         self.surf = self.frames[self.current_frame]
         self.healthbar.draw(surface)
 
-    def calculate_movement(self, keys_pressed, velo, width, height):
+    def calculate_movement(self, keys_pressed, step, width):
         # move left
-        if keys_pressed[pygame.K_a] and self.x_coord - velo > 0:
-            self.x_coord = self.x_coord - velo
+        if keys_pressed[pygame.K_a] and self.x_coord - step > 0:
+            self.x_coord = self.x_coord - step
 
         # move right
-        if keys_pressed[pygame.K_d] and self.x_coord + velo + self.width < width:
-            self.x_coord = self.x_coord + velo
+        if keys_pressed[pygame.K_d] and self.x_coord + step + self.width < width:
+            self.x_coord = self.x_coord + step
 
     def update(self):
         if self.rect is not None:
