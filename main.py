@@ -1,13 +1,10 @@
 import pygame
 
-from assets import player
 from logging_config import setup_logging, get_logger
-from assets.level import Level
 from assets.bullet import Bullet
 from assets.colors import GREEN
 from assets.groups import all_sprites_group, bullets_group, enemies_group
 from assets.player import Player
-from factory.factory import create_enemies, level_generator
 from collisions.collisions import (
     detect_bullet_enemies_collisions,
     detect_player_enemies_collisions,
@@ -45,17 +42,11 @@ def main():
         coords=((WINDOW_WIDTH / 2) - 27.3, WINDOW_HEIGHT - 50),
     )
     all_sprites_group.add(Player1)
-    enemy_count = 3
-    level_count = 1
-    enemy_list = ["tinyShip1.png", "tinyShip4.png", "tinyShip6.png"]
 
     logger.info("======================= Game started =============================")
     run = True
     while run:
         dt = min(clock.tick(FPS) / 1000, MAX_DT)
-        level_count += 1
-        enemy_count += 1
-        logger.info("Level complete — advancing to level %d", level_count)
         draw_window(
             "assets/images/background-black.png",
             Player1,
