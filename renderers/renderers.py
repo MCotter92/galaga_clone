@@ -1,8 +1,8 @@
 import pygame
 
 
-def draw_window(level_img, player, enemies, bullets, window):
-    window.blit(level_img, (0, 0))
+def draw_window(level_img_surf, player, enemies, bullets, window):
+    window.blit(level_img_surf, (0, 0))
     player.draw(window)
 
     for enemy in enemies:

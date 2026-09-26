@@ -1,11 +1,16 @@
 import pygame
 
 from logging_config import get_logger
+
 from assets.healthbar import HealthBar
-from assets.paths import StraightPath
-from utils.utils import load_png
+from assets.route import Route
 from assets.spritesheet_registry import SPRITESHEET_REGISTRY as sr
+
+from utils.utils import load_png
 from utils.utils import extract_frames
+
+from game_math.curves import figure_eight
+
 
 logger = get_logger("enemy")
 
@@ -20,11 +25,9 @@ class Enemy(pygame.sprite.Sprite):
         angle,
         max_health,
         current_health,
-        coords,
-        step,
         start_x,
-        start_y=0,
-        path=None,
+        start_y,
+        route,
     ):
         pygame.sprite.Sprite.__init__(self)
         self.name = name
@@ -43,22 +46,14 @@ class Enemy(pygame.sprite.Sprite):
         )
         self.current_frame = 0
         self.surf = self.frames[self.current_frame]
-        self.rect = self.surf.get_rect(topleft=coords)
 
         # position data
-        self.angel = angle
         self.width = width
         self.height = height
-        self.coords = coords
-        self.x_coord = coords[0]
-        self.y_coord = coords[1]
-        self.x_intercept = start_x
+        self.rect.topleft = [start_x, start_y]
         self.start_x = start_x
         self.start_y = start_y
-        self.coords[0] = self.start_x
-        self.coords[1] = self.start_y
-        self.speed = step
-        self.sprite_path = path or StraightPath()
+        self.route = route
 
         # health data
         self.max_health = max_health
@@ -66,26 +61,57 @@ class Enemy(pygame.sprite.Sprite):
         self.healthbar = HealthBar(
             max_health=self.max_health,
             current_health=self.current_health,
-            coords=[self.rect.topleft[0], self.rect.topleft[1]],
+            coords=[self.rect.topleft[0], self.rect.topleft[1] - 10],
             width=self.width,
         )
         self.last_hit_time = 0
-        logger.debug("Enemy '%s' created at (%.0f, %.0f)", name, coords[0], coords[1])
+        logger.debug(
+            "Enemy '%s' created at (%.0f, %.0f)",
+            name,
+            self.rect.topleft[0],
+            self.rect.topleft[1],
+        )
 
-    def update(self, window_height):
+    def update(self, dt, window_height):
+        # TODO: The parameter order here is `(dt, window_height)`, but the call site in
+        # `main` invokes `enemies_group.update(WINDOW_HEIGHT, dt)`, and
+        # `pygame.sprite.Group.update` forwards those two values positionally. The result
+        # is that `dt` is bound to 700 and `window_height` is bound to roughly 0.0167.
+        # Fix the mismatch and then consider whether the signature should be reordered or
+        # renamed so the order cannot be guessed wrong, since nothing in the type
+        # annotations will catch a swapped pair of floats.
         if self.rect is None:
             logger.error("Enemy '%s' has None rect", self.name)
             raise ValueError("self.rect is None")
         else:
-            self.coords[0] = self.sprite_path.path(self.x_intercept, self.coords[1])
-            self.coords[1] += self.speed
-            self.rect.topleft = (self.coords[0], self.coords[1])  # type: ignore
+            # TODO: This assigns the route's return value directly to `rect.topleft`,
+            # which means the route is required to emit absolute screen coordinates. The
+            # curve in `game_math.curves` emits offsets around the origin instead, so
+            # `start_x` and `start_y` are applied once in `__init__` and then silently
+            # discarded on the first update. This is why the enemy jumps into the
+            # top-left corner. Whichever contract is chosen, it should be visible here
+            # at the point of use, either by adding `start_x` / `start_y` to the route's
+            # output, or by storing the spawn point on the enemy and adding it here.
+            self.rect.topleft = self.route.update(dt)
+            # TODO: The health bar tracks `rect.topleft` by rebuilding its position from
+            # scratch every frame. That works, but it means the bar has no notion of its
+            # own anchor and cannot be offset for enemies that are taller than 54 pixels,
+            # where a fixed 10-pixel gap above the sprite will overlap it.
             self.healthbar.rect.bottomleft = (
-                self.coords[0],
-                self.coords[1] - 10,
+                self.rect.topleft[0],
+                self.rect.topleft[1] - 10,
             )
 
-            if self.coords[1] > window_height + 25:
+            # TODO: The 25-pixel margin is a magic number that happens to be large enough
+            # to hide the sprite's full height. It is also the value that turns the
+            # swapped-argument bug above into a self-destruct: with `window_height`
+            # holding a fraction of a second instead of 700, the effective threshold
+            # becomes about 25 pixels and a curve oscillating around the origin crosses it
+            # on roughly half of all frames. Once the argument order is fixed this
+            # threshold is harmless, but it is worth deriving it from the sprite height or
+            # naming it as a constant, so that a future change to the argument order
+            # fails loudly instead of looking like an enemy that vanishes at random.
+            if self.rect.topleft[1] > window_height + 25:
                 logger.debug("Enemy '%s' removed — off-screen", self.name)
                 self.kill()
 
@@ -94,6 +120,9 @@ class Enemy(pygame.sprite.Sprite):
         if self.current_frame >= len(self.frames):
             self.current_frame = 0
         self.surf = self.frames[self.current_frame]
-        surface.blit(self.surf, (self.coords[0], self.coords[1]))
+        if self.rect is not None:
+            surface.blit(self.surf, (self.rect.topleft[0], self.rect.topleft[1]))
+        else:
+            raise ValueError("self.rect.topleft is None")
 
         self.healthbar.draw(surface)
