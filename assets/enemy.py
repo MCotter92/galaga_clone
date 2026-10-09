@@ -1,15 +1,14 @@
+from collections import deque
+
 import pygame
 
 from logging_config import get_logger
 
 from assets.healthbar import HealthBar
-from assets.route import Route
 from assets.spritesheet_registry import SPRITESHEET_REGISTRY as sr
 
 from utils.utils import load_png
 from utils.utils import extract_frames
-
-from game_math.curves import figure_eight
 
 
 logger = get_logger("enemy")
@@ -51,9 +50,10 @@ class Enemy(pygame.sprite.Sprite):
         self.width = width
         self.height = height
         self.rect.topleft = [start_x, start_y]
-        self.start_x = start_x
-        self.start_y = start_y
+        self.position = pygame.Vector2(self.rect.topleft)
+        self.anchor = pygame.Vector2(start_x, start_y)
         self.route = route
+        self.next_routes = deque()
 
         # health data
         self.max_health = max_health
@@ -65,7 +65,7 @@ class Enemy(pygame.sprite.Sprite):
             width=self.width,
         )
         self.last_hit_time = 0
-        logger.debug(
+        logger.info(
             "Enemy '%s' created at (%.0f, %.0f)",
             name,
             self.rect.topleft[0],
@@ -73,47 +73,36 @@ class Enemy(pygame.sprite.Sprite):
         )
 
     def update(self, dt, window_height):
-        # TODO: The parameter order here is `(dt, window_height)`, but the call site in
-        # `main` invokes `enemies_group.update(WINDOW_HEIGHT, dt)`, and
-        # `pygame.sprite.Group.update` forwards those two values positionally. The result
-        # is that `dt` is bound to 700 and `window_height` is bound to roughly 0.0167.
-        # Fix the mismatch and then consider whether the signature should be reordered or
-        # renamed so the order cannot be guessed wrong, since nothing in the type
-        # annotations will catch a swapped pair of floats.
         if self.rect is None:
             logger.error("Enemy '%s' has None rect", self.name)
             raise ValueError("self.rect is None")
         else:
-            # TODO: This assigns the route's return value directly to `rect.topleft`,
-            # which means the route is required to emit absolute screen coordinates. The
-            # curve in `game_math.curves` emits offsets around the origin instead, so
-            # `start_x` and `start_y` are applied once in `__init__` and then silently
-            # discarded on the first update. This is why the enemy jumps into the
-            # top-left corner. Whichever contract is chosen, it should be visible here
-            # at the point of use, either by adding `start_x` / `start_y` to the route's
-            # output, or by storing the spawn point on the enemy and adding it here.
-            self.rect.topleft = self.route.update(dt)
-            # TODO: The health bar tracks `rect.topleft` by rebuilding its position from
-            # scratch every frame. That works, but it means the bar has no notion of its
-            # own anchor and cannot be offset for enemies that are taller than 54 pixels,
-            # where a fixed 10-pixel gap above the sprite will overlap it.
+            self.position = self.anchor + pygame.Vector2(self.route.update(dt))
+            if self.route.finished:
+                self._advance_route()
+            self.rect.topleft = (self.position[0], self.position[1])
             self.healthbar.rect.bottomleft = (
-                self.rect.topleft[0],
-                self.rect.topleft[1] - 10,
+                self.position[0],
+                self.position[1] - 10,
             )
 
-            # TODO: The 25-pixel margin is a magic number that happens to be large enough
-            # to hide the sprite's full height. It is also the value that turns the
-            # swapped-argument bug above into a self-destruct: with `window_height`
-            # holding a fraction of a second instead of 700, the effective threshold
-            # becomes about 25 pixels and a curve oscillating around the origin crosses it
-            # on roughly half of all frames. Once the argument order is fixed this
-            # threshold is harmless, but it is worth deriving it from the sprite height or
-            # naming it as a constant, so that a future change to the argument order
-            # fails loudly instead of looking like an enemy that vanishes at random.
             if self.rect.topleft[1] > window_height + 25:
                 logger.debug("Enemy '%s' removed — off-screen", self.name)
                 self.kill()
+
+    def queue_route(self, route):
+        self.next_routes.append(route)
+
+    def _advance_route(self):
+        if self.next_routes:
+            self._switch_route(self.next_routes.popleft())
+        else:
+            self.route.reset()
+
+    def _switch_route(self, route):
+        # Re-anchor so the new route starts exactly where the enemy is now.
+        self.anchor = self.position - pygame.Vector2(route.curve(route.t))
+        self.route = route
 
     def draw(self, surface):
         self.current_frame += 1

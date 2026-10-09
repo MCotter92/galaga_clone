@@ -36,6 +36,7 @@ MAX_DT = 1.0 / 30.0
 
 
 def main():
+    logger.info("======================= main() called =============================")
     pygame.init()
     setup_logging()
     clock = pygame.time.Clock()
@@ -63,31 +64,19 @@ def main():
         start_x=360,
         start_y=233,
         route=Route(
-            # TODO: The call below is actually correct and this note was wrong.
-            # `figure_eight(amplitude_x, amplitude_y)` returns the inner `curve(t)`
-            # closure, and `Route.__init__` stores that closure as `self.curve`,
-            # which is exactly the callable `Route.update` expects. The real problem
-            # is that `Route.update` returns whatever the curve returns (absolute
-            # coordinates around the origin) and `Enemy.update` assigns that value
-            # straight to `self.rect.topleft`, so `start_x=360` / `start_y=233` are
-            # used once in `__init__` and then discarded. The enemy therefore lives in
-            # curve-space anchored at (0, 0), which is the top-left corner of the
-            # screen. Decide deliberately whether a route describes offsets from the
-            # spawn point or absolute screen positions, and make that contract
-            # explicit in the signature or a docstring rather than leaving it implied
-            # by a bare tuple return.
-            figure_eight(50, 50),
-            # TODO: Tune this once the dt plumbing is correct. At 2*math.pi radians per
-            # second the Gerono curve takes 2 seconds to complete a full loop, because
-            # `y = amplitude_y * sin(2 * t)` completes two cycles for every one cycle
-            # of `x = amplitude_x * sin(t)`. The 50/50 amplitudes also keep the whole
-            # path inside a 100x100 pixel box, which is why the motion currently reads
-            # as "the enemy is not moving" rather than as a visible figure-eight.
-            2 * math.pi,
+            figure_eight(100, 100),
+            # TODO: I need to play with Route and figure_eight() to get the curve correct.
+            math.pi,
         ),
     )
     all_sprites_group.add(player1, enemy)
+    logger.info(
+        f"player1 and enemy added to all_sprites_group. num of sprites in all_sprites_group {len(all_sprites_group)}"
+    )
     enemies_group.add(enemy)
+    logger.info(
+        f"enemy added to enemies_group. num of emeines in enemies_group {len(enemies_group)}"
+    )
 
     logger.info("======================= Game started =============================")
     run = True
@@ -137,21 +126,7 @@ def main():
             run = False
             break
         bullets_group.update(WINDOW_WIDTH, WINDOW_HEIGHT)
-        # TODO: This call passes the two arguments in the wrong order for
-        # `Enemy.update(self, dt, window_height)`. `pygame.sprite.Group.update` splats
-        # these positionally, so `dt` receives the constant WINDOW_HEIGHT (700) and
-        # `window_height` receives the frame's real dt (about 0.0167 at 60 FPS). The two
-        # downstream effects are severe: `self.route.update(dt)` advances the route's
-        # `t` by roughly 4400 radians every frame, which samples the figure-eight at an
-        # effectively random phase and makes the enemy jitter inside its path instead of
-        # tracing it; and the off-screen check in `Enemy.update` becomes
-        # `y > 0.0167 + 25`, so the enemy deletes itself roughly half the time because
-        # the curve is oscillating around the origin. Either reverse the order here to
-        # match the current signature, or make the signature order unambiguous so the
-        # next reader cannot repeat the mistake. Passing `dt` to each sprite explicitly
-        # is worth considering, since splatting positional args through a group is what
-        # allowed this to go unnoticed.
-        enemies_group.update(WINDOW_HEIGHT, dt)
+        enemies_group.update(dt, WINDOW_HEIGHT)
         player1.update()
     pygame.quit()
 
